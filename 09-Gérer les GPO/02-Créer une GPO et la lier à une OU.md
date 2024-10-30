@@ -43,8 +43,10 @@ Cette commande lie la GPO nommée **TestGPO** à une OU spécifique, ici `OU=OUT
 (Get-ADOrganizationalUnit -Identity "OU=OUTest,DC=lab,DC=lan" | Get-GPInheritance).GpoLinks
 ```
 
-Cette commande permet de vérifier les liens de GPO existants pour une OU et d’afficher la liste des GPO héritées. Cela montre également l'ordre d’application des GPO, ce qui est essentiel pour comprendre les priorités et conflits potentiels entre différentes stratégies.
+- Cette commande permet de vérifier les liens de GPO existants pour une OU et d’afficher la liste des GPO héritées. Cela montre également l'ordre d’application des GPO, ce qui est essentiel pour comprendre les priorités et conflits potentiels entre différentes stratégies.
 
+- GpoLinks ==> Voir *Annexe1*
+  
 -----------
 #### Exemple de résultat:
 -----------
@@ -86,3 +88,27 @@ Les **GPO de démarrage** sont des modèles de configuration de base. Avec cette
 ---
 
 Ces commandes vous offrent une méthode complète pour créer, lier et gérer des GPO dans un domaine Active Directory. Utiliser des Starter GPO et vérifier l’héritage dans les OU permet une gestion plus structurée et un contrôle précis sur l’application des stratégies dans votre organisation.
+
+
+
+# Annexe 1 : propriété `GpoLinks`
+
+La propriété `GpoLinks` est une liste des liens vers les objets de stratégie de groupe (GPO) appliqués à une unité d’organisation (OU) spécifique. Voici quelques éléments pour mieux comprendre :
+
+- **`GpoLinks`** : Cette propriété contient des informations sur chaque GPO lié à l'OU spécifiée, y compris :
+  - L'identifiant du GPO (GUID).
+  - L'état du lien (activé ou désactivé).
+  - L'ordre de priorité des GPO (priorité d'application si plusieurs GPO sont appliqués).
+
+En PowerShell, la commande :
+
+```powershell
+(Get-ADOrganizationalUnit -Identity "OU=OUTest,DC=lab,DC=lan" | Get-GPInheritance).GpoLinks
+```
+
+fait ce qui suit :
+1. **`Get-ADOrganizationalUnit`** : Récupère l'OU spécifiée.
+2. **`Get-GPInheritance`** : Obtient les informations d'héritage de GPO pour cette OU.
+3. **`.GpoLinks`** : Affiche spécifiquement les liens GPO pour cette OU.
+
+*Cela peut aider les administrateurs à voir les GPO appliqués, leur état et leur ordre d’application pour gérer les configurations et les politiques dans un environnement Active Directory.*
