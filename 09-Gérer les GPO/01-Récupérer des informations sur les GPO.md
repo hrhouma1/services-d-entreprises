@@ -1,4 +1,3 @@
-je veux toujours de ce style pour ce qui reste 
 # Introduction 
 
 Je vous présente un guide détaillé sur la récupération d'informations et l'analyse des stratégies de groupe (GPO) en utilisant des commandes PowerShell. 
