@@ -45,6 +45,36 @@ Cette commande lie la GPO nommée **TestGPO** à une OU spécifique, ici `OU=OUT
 
 Cette commande permet de vérifier les liens de GPO existants pour une OU et d’afficher la liste des GPO héritées. Cela montre également l'ordre d’application des GPO, ce qui est essentiel pour comprendre les priorités et conflits potentiels entre différentes stratégies.
 
+-----------
+#### Exemple de résultat:
+-----------
+
+Lorsque vous exécutez cette commande PowerShell pour afficher les liens GPO associés à une unité d'organisation (OU), le format de sortie ressemble généralement à ceci :
+
+```plaintext
+GpoID                                   DisplayName                  Enabled    Enforced
+------                                   -----------                  -------    --------
+{6AC1786C-016F-11D2-945F-00C04FB984F9}   Default Domain Policy        True       False
+{31B2F340-016D-11D2-945F-00C04FB984F9}   Custom Security Policy       True       True
+{12A52F67-ABF5-4DF5-B8FD-67A4F13E5EF8}   Software Deployment Policy   False      False
+```
+
+ Signification des  colonnes ==>
+
+- **GpoID** : L'identifiant unique (GUID) du GPO.
+- **DisplayName** : Le nom du GPO, qui facilite son identification.
+- **Enabled** : Indique si le lien vers le GPO est activé pour cette OU (`True` signifie activé).
+- **Enforced** : Indique si le GPO est forcé. Un GPO forcé ne peut pas être remplacé par un autre GPO appliqué à un niveau inférieur dans la hiérarchie Active Directory.
+
+### Exemple d'interprétation
+
+- Le **Default Domain Policy** est activé pour l'OU mais n'est pas forcé.
+- Le **Custom Security Policy** est à la fois activé et forcé, ce qui signifie qu'il ne pourra pas être remplacé par d'autres GPO dans des sous-OU.
+- Le **Software Deployment Policy** est désactivé pour cette OU.
+
+*Ce type de sortie vous permet de visualiser rapidement quels GPOs sont actifs, désactivés ou forcés pour l'OU spécifiée.*
+
+
 ### 6. Créer un GPO de démarrage : `New-GPStarterGPO -Name "Test2GPOStarter" -Comment "Test GPOStarter"`
 
 ```powershell
