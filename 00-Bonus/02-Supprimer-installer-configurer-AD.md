@@ -12,34 +12,28 @@ $OU_Etudiants = "OU=Etudiants,DC=cmaisonneuve,DC=qc,DC=ca"
 $OU_RH = "OU=RH,DC=cmaisonneuve,DC=qc,DC=ca"
 $Password = "P@ssw0rd!" # Remplacez par un mot de passe sécurisé
 
-# 🚫 Étape 0 : Désinstallation des fonctionnalités et suppression des objets existants
-
-# Désinstaller Active Directory Domain Services si déjà installé
+# 1️⃣ Désinstallation des fonctionnalités si déjà présentes
 if (Get-WindowsFeature AD-Domain-Services) {
     Uninstall-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools -Force
 }
-
-# Désinstaller DHCP si déjà installé
 if (Get-WindowsFeature DHCP) {
     Uninstall-WindowsFeature -Name DHCP -IncludeManagementTools -Force
 }
-
-# Redémarrage pour appliquer la désinstallation propre
 Write-Output "Redémarrage du système pour finaliser la désinstallation."
 Restart-Computer -Force
 Start-Sleep -Seconds 60
 
-# ⚙️ Étape 1 : Réinstallation des fonctionnalités nécessaires
+# ⚙️ 2️⃣ Réinstallation des fonctionnalités nécessaires
 Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
 Install-WindowsFeature -Name DHCP -IncludeManagementTools
 
-# ⚙️ Étape 2 : Promotion en contrôleur de domaine avec une nouvelle forêt
-Install-ADDSForest -DomainName $DomainName -DomainNetBIOSName $NetBIOSName -ForestMode "WinThreshold" -DomainMode "WinThreshold" -InstallDns -SafeModeAdministratorPassword (ConvertTo-SecureString -AsPlainText $Password -Force) -Force
+# ⚙️ 3️⃣ Promotion en contrôleur de domaine avec une nouvelle forêt
+Install-ADDSForest -DomainName $DomainName -DomainNetBIOSName $NetBIOSName -ForestMode "Win2012R2" -DomainMode "Win2012R2" -InstallDns -SafeModeAdministratorPassword (ConvertTo-SecureString -AsPlainText $Password -Force) -Force
 
-# ⚙️ Étape 3 : Configuration du DHCP pour le domaine
+# ⚙️ 4️⃣ Importation du module DHCPServer
 Import-Module DHCPServer
 
-# Configuration de la portée DHCP (adapter les adresses IP selon votre réseau)
+# ⚙️ 5️⃣ Configuration de la portée DHCP
 $ScopeID = "192.168.1.0"
 $StartRange = "192.168.1.100"
 $EndRange = "192.168.1.200"
@@ -48,70 +42,86 @@ $LeaseDuration = "8.00:00:00"
 
 Add-DhcpServerv4Scope -Name "Scope $DomainName" -StartRange $StartRange -EndRange $EndRange -SubnetMask $SubnetMask -LeaseDuration $LeaseDuration -State Active
 
-# ⚙️ Étape 4 : Création des Unités d'Organisation (OU)
-New-ADOrganizationalUnit -Name "Enseignants" -Path "DC=cmaisonneuve,DC=qc,DC=ca"
-New-ADOrganizationalUnit -Name "Etudiants" -Path "DC=cmaisonneuve,DC=qc,DC=ca"
-New-ADOrganizationalUnit -Name "Ressources Humaines" -Path "DC=cmaisonneuve,DC=qc,DC=ca"
+# ⚙️ 6️⃣ Création des Unités d'Organisation (OU) si elles n'existent pas
+if (-not (Get-ADOrganizationalUnit -Filter { Name -eq "Enseignants" } -ErrorAction SilentlyContinue)) {
+    New-ADOrganizationalUnit -Name "Enseignants" -Path "DC=cmaisonneuve,DC=qc,DC=ca"
+}
+if (-not (Get-ADOrganizationalUnit -Filter { Name -eq "Etudiants" } -ErrorAction SilentlyContinue)) {
+    New-ADOrganizationalUnit -Name "Etudiants" -Path "DC=cmaisonneuve,DC=qc,DC=ca"
+}
+if (-not (Get-ADOrganizationalUnit -Filter { Name -eq "Ressources Humaines" } -ErrorAction SilentlyContinue)) {
+    New-ADOrganizationalUnit -Name "Ressources Humaines" -Path "DC=cmaisonneuve,DC=qc,DC=ca"
+}
 
-# ⚙️ Étape 5 : Création de groupes pour chaque OU
-New-ADGroup -Name "GroupeEnseignants" -GroupScope Global -GroupCategory Security -Path $OU_Enseignants
-New-ADGroup -Name "GroupeEtudiants" -GroupScope Global -GroupCategory Security -Path $OU_Etudiants
-New-ADGroup -Name "GroupeRH" -GroupScope Global -GroupCategory Security -Path $OU_RH
+# ⚙️ 7️⃣ Création de groupes pour chaque OU si non existants
+if (-not (Get-ADGroup -Filter { Name -eq "GroupeEnseignants" } -ErrorAction SilentlyContinue)) {
+    New-ADGroup -Name "GroupeEnseignants" -GroupScope Global -GroupCategory Security -Path $OU_Enseignants
+}
+if (-not (Get-ADGroup -Filter { Name -eq "GroupeEtudiants" } -ErrorAction SilentlyContinue)) {
+    New-ADGroup -Name "GroupeEtudiants" -GroupScope Global -GroupCategory Security -Path $OU_Etudiants
+}
+if (-not (Get-ADGroup -Filter { Name -eq "GroupeRH" } -ErrorAction SilentlyContinue)) {
+    New-ADGroup -Name "GroupeRH" -GroupScope Global -GroupCategory Security -Path $OU_RH
+}
 
-# ⚙️ Étape 6 : Ajout d'utilisateurs enseignants avec adresses e-mail
+# ⚙️ 8️⃣ Ajout d'utilisateurs enseignants avec adresses e-mail
 $Enseignants = @(
     @{FirstName="Haythem"; LastName="Rehouma"; Email="hrehouma@$DomainName"}
-    # Ajoutez d'autres enseignants ici
 )
 
 foreach ($Enseignant in $Enseignants) {
     $Username = $Enseignant.FirstName.Substring(0,1) + $Enseignant.LastName
     $UserPrincipalName = "$Username@$DomainName"
-    New-ADUser -Name "$($Enseignant.FirstName) $($Enseignant.LastName)" `
-               -GivenName $Enseignant.FirstName `
-               -Surname $Enseignant.LastName `
-               -UserPrincipalName $UserPrincipalName `
-               -SamAccountName $Username `
-               -EmailAddress $Enseignant.Email `
-               -Path $OU_Enseignants `
-               -AccountPassword (ConvertTo-SecureString -AsPlainText $Password -Force) `
-               -Enabled $true
-    Add-ADGroupMember -Identity "GroupeEnseignants" -Members $Username
+    if (-not (Get-ADUser -Filter { SamAccountName -eq $Username } -ErrorAction SilentlyContinue)) {
+        New-ADUser -Name "$($Enseignant.FirstName) $($Enseignant.LastName)" `
+                   -GivenName $Enseignant.FirstName `
+                   -Surname $Enseignant.LastName `
+                   -UserPrincipalName $UserPrincipalName `
+                   -SamAccountName $Username `
+                   -EmailAddress $Enseignant.Email `
+                   -Path $OU_Enseignants `
+                   -AccountPassword (ConvertTo-SecureString -AsPlainText $Password -Force) `
+                   -Enabled $true
+        Add-ADGroupMember -Identity "GroupeEnseignants" -Members $Username
+    }
 }
 
-# ⚙️ Étape 7 : Ajout massif d'étudiants avec adresses e-mail
+# ⚙️ 9️⃣ Ajout massif d'étudiants avec adresses e-mail
 $Etudiants = @(
-    @{Username="e123456"; Email="e123456@$DomainName"}
+    @{Username="e123456"; Email="e123456@$DomainName"},
     @{Username="e123457"; Email="e123457@$DomainName"}
-    # Ajoutez d'autres étudiants ici
 )
 
 foreach ($Etudiant in $Etudiants) {
-    New-ADUser -Name $Etudiant.Username `
-               -SamAccountName $Etudiant.Username `
-               -UserPrincipalName "$($Etudiant.Username)@$DomainName" `
-               -EmailAddress $Etudiant.Email `
-               -Path $OU_Etudiants `
-               -AccountPassword (ConvertTo-SecureString -AsPlainText $Password -Force) `
-               -Enabled $true
-    Add-ADGroupMember -Identity "GroupeEtudiants" -Members $Etudiant.Username
+    if (-not (Get-ADUser -Filter { SamAccountName -eq $Etudiant.Username } -ErrorAction SilentlyContinue)) {
+        New-ADUser -Name $Etudiant.Username `
+                   -SamAccountName $Etudiant.Username `
+                   -UserPrincipalName "$($Etudiant.Username)@$DomainName" `
+                   -EmailAddress $Etudiant.Email `
+                   -Path $OU_Etudiants `
+                   -AccountPassword (ConvertTo-SecureString -AsPlainText $Password -Force) `
+                   -Enabled $true
+        Add-ADGroupMember -Identity "GroupeEtudiants" -Members $Etudiant.Username
+    }
 }
 
-# ⚙️ Étape 8 : Configuration des GPO (exemple)
-# Exemple de GPO : interdire l'accès au Panneau de configuration pour les étudiants
+# 🔟 Configuration des GPO (exemple)
 $GPOName = "GPO-Etudiants"
-New-GPO -Name $GPOName | New-GPLink -Target $OU_Etudiants -LinkEnabled Yes
-Set-GPRegistryValue -Name $GPOName -Key "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -ValueName "NoControlPanel" -Type DWord -Value 1
+if (-not (Get-GPO -Name $GPOName -ErrorAction SilentlyContinue)) {
+    New-GPO -Name $GPOName | New-GPLink -Target $OU_Etudiants -LinkEnabled Yes
+    Set-GPRegistryValue -Name $GPOName -Key "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -ValueName "NoControlPanel" -Type DWord -Value 1
+}
 
-# 🔄 Vérification et affichage des informations d'installation
-Write-Output "Active Directory et les composants associés ont été installés et configurés avec succès."
+# Vérification et affichage des informations d'installation
+Write-Output "Configuration Active Directory et composants associés complétée avec succès."
 Write-Output "Forêt Active Directory : $ForestName"
 Write-Output "Domaine : $DomainName"
 Write-Output "OU Enseignants : $OU_Enseignants"
 Write-Output "OU Etudiants : $OU_Etudiants"
 Write-Output "OU Ressources Humaines : $OU_RH"
-Write-Output "Les utilisateurs enseignants et étudiants ont été créés avec leurs adresses e-mail."
+Write-Output "Utilisateurs enseignants et étudiants créés avec leurs adresses e-mail."
 Write-Output "GPO appliqué : $GPOName pour les étudiants."
+
 ```
 
 ### Explications supplémentaires :
