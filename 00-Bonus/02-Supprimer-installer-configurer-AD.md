@@ -3,6 +3,34 @@
 ```powershell
 # ⚠️ Assurez-vous que ce script est exécuté avec les droits d'administrateur ⚠️
 
+
+
+# ⚠️ Assurez-vous que ce script est exécuté avec les droits d'administrateur ⚠️
+
+# Vérification et installation des modules nécessaires
+$requiredModules = @("ServerManager", "ADDSDeployment", "DHCPServer")
+
+foreach ($module in $requiredModules) {
+    if (-not (Get-Module -ListAvailable -Name $module)) {
+        Write-Output "Le module $module n'est pas installé. Tentative d'installation..."
+        try {
+            Install-WindowsFeature -Name $module -IncludeManagementTools -ErrorAction Stop
+        }
+        catch {
+            Write-Output "Impossible d'installer $module via Install-WindowsFeature. Tentative d'installation via RSAT..."
+            Get-WindowsCapability -Name RSAT* -Online | Where-Object { $_.Name -like "*$module*" } | Add-WindowsCapability -Online
+        }
+    }
+    Import-Module $module -ErrorAction SilentlyContinue
+}
+
+# Vérification de l'installation réussie
+$missingModules = $requiredModules | Where-Object { -not (Get-Module -ListAvailable -Name $_) }
+if ($missingModules) {
+    Write-Output "Impossible d'installer les modules suivants : $($missingModules -join ', '). Veuillez les installer manuellement et réexécuter le script."
+    exit
+}
+
 # Variables de configuration
 $DomainName = "cmaisonneuve.qc.ca"
 $NetBIOSName = "CMAISONNEUVE"
@@ -23,9 +51,11 @@ Write-Output "Redémarrage du système pour finaliser la désinstallation."
 Restart-Computer -Force
 Start-Sleep -Seconds 60
 
+# Le reste du script reste inchangé à partir d'ici
 # ⚙️ 2️⃣ Réinstallation des fonctionnalités nécessaires
 Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
 Install-WindowsFeature -Name DHCP -IncludeManagementTools
+
 
 # ⚙️ 3️⃣ Promotion en contrôleur de domaine avec une nouvelle forêt
 Install-ADDSForest -DomainName $DomainName -DomainNetBIOSName $NetBIOSName -ForestMode "Win2012R2" -DomainMode "Win2012R2" -InstallDns -SafeModeAdministratorPassword (ConvertTo-SecureString -AsPlainText $Password -Force) -Force
