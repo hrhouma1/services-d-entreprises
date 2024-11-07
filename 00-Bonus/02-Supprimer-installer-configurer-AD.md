@@ -1,33 +1,54 @@
 # Script : "Installation-et-Réinstallation-Complète-Active-Directory-pour-un-Collège.md"
 
 ```powershell
-# ⚠️ Assurez-vous que ce script est exécuté avec les droits d'administrateur ⚠️
-
-
 
 # ⚠️ Assurez-vous que ce script est exécuté avec les droits d'administrateur ⚠️
+
+# Fonction pour vérifier si on est sur Windows Server
+function Is-WindowsServer {
+    return (Get-WmiObject -Class Win32_OperatingSystem).ProductType -eq 3
+}
+
+# Fonction pour installer les fonctionnalités sur Windows Server
+function Install-ServerFeatures {
+    Install-WindowsFeature -Name AD-Domain-Services, DHCP, RSAT-ADDS, RSAT-DHCP -IncludeManagementTools
+}
+
+# Fonction pour installer RSAT sur Windows 10/11
+function Install-RSAT {
+    Get-WindowsCapability -Name RSAT* -Online | Add-WindowsCapability -Online
+}
 
 # Vérification et installation des modules nécessaires
 $requiredModules = @("ServerManager", "ADDSDeployment", "DHCPServer")
 
+# Vérifier si on est sur Windows Server
+$isServer = Is-WindowsServer
+
+if ($isServer) {
+    Write-Output "Système Windows Server détecté. Installation des fonctionnalités serveur..."
+    Install-ServerFeatures
+} else {
+    Write-Output "Système Windows Client détecté. Installation de RSAT..."
+    Install-RSAT
+}
+
+# Attendre que l'installation soit terminée
+Start-Sleep -Seconds 30
+
+# Importer les modules
 foreach ($module in $requiredModules) {
     if (-not (Get-Module -ListAvailable -Name $module)) {
-        Write-Output "Le module $module n'est pas installé. Tentative d'installation..."
-        try {
-            Install-WindowsFeature -Name $module -IncludeManagementTools -ErrorAction Stop
-        }
-        catch {
-            Write-Output "Impossible d'installer $module via Install-WindowsFeature. Tentative d'installation via RSAT..."
-            Get-WindowsCapability -Name RSAT* -Online | Where-Object { $_.Name -like "*$module*" } | Add-WindowsCapability -Online
-        }
+        Write-Output "Le module $module n'est toujours pas disponible après l'installation."
+    } else {
+        Import-Module $module -ErrorAction SilentlyContinue
     }
-    Import-Module $module -ErrorAction SilentlyContinue
 }
 
 # Vérification de l'installation réussie
 $missingModules = $requiredModules | Where-Object { -not (Get-Module -ListAvailable -Name $_) }
 if ($missingModules) {
-    Write-Output "Impossible d'installer les modules suivants : $($missingModules -join ', '). Veuillez les installer manuellement et réexécuter le script."
+    Write-Output "Les modules suivants n'ont pas pu être installés : $($missingModules -join ', '). Veuillez les installer manuellement et réexécuter le script."
     exit
 }
 
@@ -40,25 +61,32 @@ $OU_Etudiants = "OU=Etudiants,DC=cmaisonneuve,DC=qc,DC=ca"
 $OU_RH = "OU=RH,DC=cmaisonneuve,DC=qc,DC=ca"
 $Password = "P@ssw0rd!" # Remplacez par un mot de passe sécurisé
 
-# 1️⃣ Désinstallation des fonctionnalités si déjà présentes
-if (Get-WindowsFeature AD-Domain-Services) {
-    Uninstall-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools -Force
+# 1️⃣ Désinstallation des fonctionnalités si déjà présentes (uniquement pour Windows Server)
+if ($isServer) {
+    if (Get-WindowsFeature AD-Domain-Services) {
+        Uninstall-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools -Force
+    }
+    if (Get-WindowsFeature DHCP) {
+        Uninstall-WindowsFeature -Name DHCP -IncludeManagementTools -Force
+    }
+    Write-Output "Redémarrage du système pour finaliser la désinstallation."
+    Restart-Computer -Force
+    Start-Sleep -Seconds 60
 }
-if (Get-WindowsFeature DHCP) {
-    Uninstall-WindowsFeature -Name DHCP -IncludeManagementTools -Force
+
+# ⚙️ 2️⃣ Réinstallation des fonctionnalités nécessaires (uniquement pour Windows Server)
+if ($isServer) {
+    Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
+    Install-WindowsFeature -Name DHCP -IncludeManagementTools
 }
-Write-Output "Redémarrage du système pour finaliser la désinstallation."
-Restart-Computer -Force
-Start-Sleep -Seconds 60
-
-# Le reste du script reste inchangé à partir d'ici
-# ⚙️ 2️⃣ Réinstallation des fonctionnalités nécessaires
-Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
-Install-WindowsFeature -Name DHCP -IncludeManagementTools
-
 
 # ⚙️ 3️⃣ Promotion en contrôleur de domaine avec une nouvelle forêt
-Install-ADDSForest -DomainName $DomainName -DomainNetBIOSName $NetBIOSName -ForestMode "Win2012R2" -DomainMode "Win2012R2" -InstallDns -SafeModeAdministratorPassword (ConvertTo-SecureString -AsPlainText $Password -Force) -Force
+if ($isServer) {
+    Install-ADDSForest -DomainName $DomainName -DomainNetBIOSName $NetBIOSName -ForestMode "Win2012R2" -DomainMode "Win2012R2" -InstallDns -SafeModeAdministratorPassword (ConvertTo-SecureString -AsPlainText $Password -Force) -Force
+} else {
+    Write-Output "La promotion en contrôleur de domaine n'est pas possible sur un système client Windows."
+    exit
+}
 
 # ⚙️ 4️⃣ Importation du module DHCPServer
 Import-Module DHCPServer
@@ -71,6 +99,9 @@ $SubnetMask = "255.255.255.0"
 $LeaseDuration = "8.00:00:00"
 
 Add-DhcpServerv4Scope -Name "Scope $DomainName" -StartRange $StartRange -EndRange $EndRange -SubnetMask $SubnetMask -LeaseDuration $LeaseDuration -State Active
+
+
+
 
 # ⚙️ 6️⃣ Création des Unités d'Organisation (OU) si elles n'existent pas
 if (-not (Get-ADOrganizationalUnit -Filter { Name -eq "Enseignants" } -ErrorAction SilentlyContinue)) {
