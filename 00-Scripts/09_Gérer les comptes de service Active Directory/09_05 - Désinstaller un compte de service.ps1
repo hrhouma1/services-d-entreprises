@@ -1,0 +1,1 @@
+Uninstall-ADServiceAccount -Identity svc-test
