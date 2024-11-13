@@ -1,113 +1,154 @@
-## 📚 Cours détaillé : Modifier la stratégie des mots de passe dans Active Directory avec PowerShell
+## 📚 Cours détaillé : Configurer les PSO (Password Settings Objects) dans Active Directory avec PowerShell
 
-Dans ce cours, nous allons apprendre à utiliser PowerShell pour modifier la stratégie de mots de passe par défaut dans Active Directory (AD) avec la commande `Set-ADDefaultDomainPasswordPolicy`. Cette commande permet de configurer les paramètres de sécurité des mots de passe dans le domaine, comme la complexité, la durée de verrouillage et la durée de vie maximale.
+Dans ce cours, nous allons apprendre à utiliser PowerShell pour configurer et gérer des Password Settings Objects (PSO) dans Active Directory (AD) à l'aide de différentes commandes. Les PSO permettent de définir des stratégies de mots de passe granulaires, applicables à des utilisateurs ou groupes spécifiques, et offrent une plus grande flexibilité dans la gestion des politiques de sécurité.
 
 ---
 
 # ✨ Résumé des commandes
 
 ```powershell
-# 🔐 Récupère la stratégie de mot de passe par défaut du domaine
-Get-ADDefaultDomainPasswordPolicy
+# 🔍 Liste toutes les stratégies de mots de passe granulaires dans Active Directory
+Get-ADFineGrainedPasswordPolicy -Filter *
 
-# ✏️ Modifie la stratégie de mot de passe pour désactiver la complexité, définir une durée de verrouillage de 45 minutes et un âge maximum de 30 jours
-Set-ADDefaultDomainPasswordPolicy -Identity lab.lan -ComplexityEnabled $false -LockoutDuration 00:45:00 -MaxPasswordAge 30.00:00:00
+# 🔍 Filtre les PSO dont la durée maximale de mot de passe est supérieure à 10 jours
+Get-ADFineGrainedPasswordPolicy -Filter "MaxPasswordAge -gt '10'"
 
-# 🔄 Vérifie la stratégie de mot de passe après modification
-Get-ADDefaultDomainPasswordPolicy
+# 👤 Récupère les sujets d'une stratégie de mots de passe granulaire spécifique
+Get-ADFineGrainedPasswordPolicySubject -Identity Test-PSO2
 
-# ✅ Vérifie si la complexité de mot de passe répond aux exigences, et propose la mise en conformité si nécessaire
-$MDPComplexe = $true
-$StrategieMDP = Get-ADDefaultDomainPasswordPolicy -Identity lab.lan
+# 🆕 Crée une nouvelle PSO nommée "PSO-Test" avec des paramètres spécifiques
+New-ADFineGrainedPasswordPolicy -Name PSO-Test `
+-ComplexityEnabled $true `
+-LockoutDuration 00:30:00 `
+-LockoutObservationWindow 00:30:00 `
+-LockoutThreshold 0 `
+-MaxPasswordAge 60.00:00:00 `
+-MinPasswordAge 5.00:00:00 `
+-MinPasswordLength 10 `
+-Precedence 5 
 
-if($StrategieMDP.ComplexityEnabled -eq $MDPComplexe) {
-   Write-Host "La stratégie de mot de passe répond aux exigences de complexité" -ForegroundColor Green
-} else {
-   Write-Host "La stratégie de mot de passe ne répond pas aux exigences de complexité." -ForegroundColor Red
-   Write-Host "Souhaitez-vous mettre en conformité l'exigence de complexité (O/N) ? " -ForegroundColor Green -NoNewline
-   $Reponse = Read-Host
-   if($Reponse -eq "O") {
-      Set-ADDefaultDomainPasswordPolicy -Identity lab.lan -ComplexityEnabled $true
-      Write-Host "La stratégie de mot de passe a été mise en conformité."
-   } elseif($Reponse -eq "N") {
-      Write-Host "La stratégie de mot de passe n'a pas été modifiée."
-   }
-}
+# 🔄 Vérifie les paramètres de la PSO "PSO-Test"
+Get-ADFineGrainedPasswordPolicy PSO-Test
+
+# ➕ Associe la PSO "PSO-Test" au groupe "GroupeTest3"
+Add-ADFineGrainedPasswordPolicySubject -Identity PSO-Test -Subjects GroupeTest3
+
+# ➕ Associe la PSO "PSO-Test" à tous les utilisateurs dont le titre commence par "Ingé"
+Get-ADUser -Filter "title -like 'Ingé*'" | Add-ADFineGrainedPasswordPolicySubject -Identity PSO-Test
+
+# ✏️ Modifie la durée maximale du mot de passe pour la PSO "PSO-Test"
+Set-ADFineGrainedPasswordPolicy -Identity PSO-Test -MaxPasswordAge 50.00:00:00
+
+# 🔍 Vérifie les modifications apportées à la PSO "PSO-Test"
+Get-ADFineGrainedPasswordPolicy PSO-Test
+
+# 🔍 Récupère la stratégie de mot de passe applicable à l'utilisateur "sleroy"
+Get-ADUserResultantPasswordPolicy sleroy
+
+# 🗑️ Supprime la PSO "Test-PSO2" sans confirmation
+Remove-ADFineGrainedPasswordPolicy -Identity Test-PSO2 -Confirm:$false
+
+# 🔒 Désactive la protection contre la suppression accidentelle pour "Test-PSO1"
+Set-ADFineGrainedPasswordPolicy -Identity Test-PSO1 -ProtectedFromAccidentalDeletion $false
+
+# 🔍 Vérifie les paramètres de la PSO "Test-PSO1"
+Get-ADFineGrainedPasswordPolicy Test-PSO1
+
+# 🗑️ Supprime l'association entre "Test-PSO1" et l'utilisateur "sleroy" sans confirmation
+Remove-ADFineGrainedPasswordPolicySubject -Identity Test-PSO1 -Subjects sleroy -Confirm:$false
 ```
 
 ---
 
-# 🔐 Commande 1 : Récupérer la stratégie de mot de passe par défaut du domaine
+# 🔍 Commande 1 : Lister toutes les stratégies de mots de passe granulaires
 
 ```powershell
-Get-ADDefaultDomainPasswordPolicy
+Get-ADFineGrainedPasswordPolicy -Filter *
 ```
 
 **Détails :**
-- **Get-ADDefaultDomainPasswordPolicy** : Récupère les paramètres de stratégie de mots de passe du domaine.
+- **Get-ADFineGrainedPasswordPolicy -Filter *** : Liste toutes les PSO disponibles dans Active Directory.
 
-Cette commande est utilisée pour consulter les règles de sécurité des mots de passe actuelles.
+Cette commande est utilisée pour obtenir un aperçu de toutes les stratégies de mots de passe granulaires dans le domaine.
 
 ---
 
-# ✏️ Commande 2 : Modifier la stratégie de mot de passe
+# 👤 Commande 2 : Récupérer les sujets d'une PSO spécifique
 
 ```powershell
-Set-ADDefaultDomainPasswordPolicy -Identity lab.lan -ComplexityEnabled $false -LockoutDuration 00:45:00 -MaxPasswordAge 30.00:00:00
+Get-ADFineGrainedPasswordPolicySubject -Identity Test-PSO2
 ```
 
 **Détails :**
-- **Set-ADDefaultDomainPasswordPolicy** : Permet de configurer la politique de mots de passe du domaine.
-- **`-ComplexityEnabled $false`** : Désactive la règle de complexité pour les mots de passe.
-- **`-LockoutDuration 00:45:00`** : Définit la durée de verrouillage à 45 minutes.
-- **`-MaxPasswordAge 30.00:00:00`** : Définit une durée de vie maximale de 30 jours pour les mots de passe.
-
-Cette commande est utile pour mettre à jour les règles de sécurité des mots de passe en fonction des politiques de l'organisation.
+- **Get-ADFineGrainedPasswordPolicySubject** : Affiche les utilisateurs ou groupes associés à la PSO spécifiée.
 
 ---
 
-# 🔄 Commande 3 : Vérifier la stratégie de mot de passe après modification
+# 🆕 Commande 3 : Créer une nouvelle PSO avec des paramètres spécifiques
 
 ```powershell
-Get-ADDefaultDomainPasswordPolicy
+New-ADFineGrainedPasswordPolicy -Name PSO-Test `
+-ComplexityEnabled $true `
+-LockoutDuration 00:30:00 `
+-LockoutObservationWindow 00:30:00 `
+-LockoutThreshold 0 `
+-MaxPasswordAge 60.00:00:00 `
+-MinPasswordAge 5.00:00:00 `
+-MinPasswordLength 10 `
+-Precedence 5
 ```
 
 **Détails :**
-- Cette commande permet de vérifier les modifications appliquées à la stratégie de mot de passe.
+- **New-ADFineGrainedPasswordPolicy** : Crée une nouvelle PSO avec des paramètres de sécurité, incluant la complexité et les durées de verrouillage et de mot de passe.
 
 ---
 
-# ✅ Commande 4 : Vérifier la conformité de la stratégie de complexité des mots de passe
+# ➕ Commande 4 : Associer une PSO à des groupes ou utilisateurs spécifiques
 
 ```powershell
-$MDPComplexe = $true
-$StrategieMDP = Get-ADDefaultDomainPasswordPolicy -Identity lab.lan
-
-if($StrategieMDP.ComplexityEnabled -eq $MDPComplexe) {
-   Write-Host "La stratégie de mot de passe répond aux exigences de complexité" -ForegroundColor Green
-} else {
-   Write-Host "La stratégie de mot de passe ne répond pas aux exigences de complexité." -ForegroundColor Red
-   Write-Host "Souhaitez-vous mettre en conformité l'exigence de complexité (O/N) ? " -ForegroundColor Green -NoNewline
-   $Reponse = Read-Host
-   if($Reponse -eq "O") {
-      Set-ADDefaultDomainPasswordPolicy -Identity lab.lan -ComplexityEnabled $true
-      Write-Host "La stratégie de mot de passe a été mise en conformité."
-   } elseif($Reponse -eq "N") {
-      Write-Host "La stratégie de mot de passe n'a pas été modifiée."
-   }
-}
+Add-ADFineGrainedPasswordPolicySubject -Identity PSO-Test -Subjects GroupeTest3
 ```
 
 **Détails :**
-1. **$MDPComplexe** : Définit la valeur de complexité attendue pour le mot de passe.
-2. **`if($StrategieMDP.ComplexityEnabled -eq $MDPComplexe)`** : Vérifie si la complexité des mots de passe est activée selon les exigences.
-3. **`Write-Host`** : Affiche un message pour indiquer si la stratégie respecte ou non les exigences de complexité.
-4. **`Read-Host`** : Permet à l'utilisateur de choisir s'il souhaite modifier la stratégie pour activer la complexité.
+- **Add-ADFineGrainedPasswordPolicySubject** : Associe la PSO spécifiée à un groupe ou utilisateur.
 
-Cette section de script est utile pour s'assurer que la politique de mots de passe est conforme et propose une mise à jour automatique si nécessaire.
+---
+
+# ✏️ Commande 5 : Modifier une PSO existante
+
+```powershell
+Set-ADFineGrainedPasswordPolicy -Identity PSO-Test -MaxPasswordAge 50.00:00:00
+```
+
+**Détails :**
+- **Set-ADFineGrainedPasswordPolicy** : Modifie les paramètres d'une PSO existante.
+
+---
+
+# 🔍 Commande 6 : Récupérer la PSO applicable à un utilisateur
+
+```powershell
+Get-ADUserResultantPasswordPolicy sleroy
+```
+
+**Détails :**
+- **Get-ADUserResultantPasswordPolicy** : Affiche la PSO effective pour un utilisateur spécifique.
+
+---
+
+# 🗑️ Commande 7 : Supprimer une PSO ou une association avec un utilisateur ou groupe
+
+```powershell
+Remove-ADFineGrainedPasswordPolicy -Identity Test-PSO2 -Confirm:$false
+Remove-ADFineGrainedPasswordPolicySubject -Identity Test-PSO1 -Subjects sleroy -Confirm:$false
+```
+
+**Détails :**
+- **Remove-ADFineGrainedPasswordPolicy** : Supprime une PSO.
+- **Remove-ADFineGrainedPasswordPolicySubject** : Supprime une association PSO avec un utilisateur/groupe.
 
 ---
 
 ### 📝 Résumé
 
-Ces commandes PowerShell permettent de gérer et de vérifier la stratégie de mots de passe par défaut dans Active Directory, en configurant des paramètres de sécurité tels que la complexité, la durée de verrouillage, et la durée de vie maximale des mots de passe. Ce script offre également une validation interactive de conformité, permettant d'ajuster la politique de mots de passe en fonction des standards de sécurité.
+Ces commandes PowerShell permettent de créer, configurer, associer et supprimer des stratégies de mots de passe granulaires (PSO) dans Active Directory. En définissant des PSO pour des utilisateurs ou groupes spécifiques, on peut personnaliser les politiques de sécurité au-delà de la stratégie de domaine par défaut, pour répondre aux besoins de sécurité particuliers de l'organisation.
