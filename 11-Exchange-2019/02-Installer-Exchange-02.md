@@ -1,5 +1,5 @@
 
-## Prérequis détaillés
+# Prérequis détaillés
 
 Avant de commencer l'installation d'Exchange Server, assurez-vous d'avoir les éléments suivants :
 
@@ -19,7 +19,7 @@ Avant de commencer l'installation d'Exchange Server, assurez-vous d'avoir les é
    - Compte d'administrateur de domaine
    - Droits d'administrateur local sur le serveur d'installation
 
-## Étapes d'installation détaillées
+# Étapes d'installation détaillées
 
 ### 1. Préparation du serveur
 
@@ -124,7 +124,7 @@ Accédez à https://mail.votredomaine.com/owa et connectez-vous.
 5.4. **Vérification des journaux** :
 Examinez les journaux d'événements Windows pour détecter d'éventuelles erreurs.
 
-## Conclusion
+# Conclusion
 
 - Ce tutoriel détaillé couvre les principales étapes de l'installation et de la configuration initiale d'Exchange Server. 
 - N'oubliez pas que chaque environnement est unique et peut nécessiter des ajustements spécifiques. 
