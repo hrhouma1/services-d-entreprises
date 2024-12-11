@@ -30,7 +30,7 @@
    - Des points supplémentaires peuvent être attribués pour une documentation soignée, des configurations avancées ou l’ajout d’un composant réseau pertinent (pare-feu, DNS secondaire, etc.).
 
 #### **Parties du TP inchangées :**
-Les consignes des parties 1 à 3 restent valables avec les ajouts suivants pour s'assurer que les étudiants comprennent et mettent en œuvre une solution réseau cohérente :
+Les consignes des parties 1 à 3 restent valables avec les ajouts suivants pour mettre en œuvre une solution réseau cohérente :
 
 **Validation non requise** : 
 Fournissez des captures d’écran détaillées de votre topologie réseau accompagnées de commentaires explicatifs pour chaque image. Ces éléments sont obligatoires avant de passer à la partie 2, mais une validation préalable de l’enseignant n’est pas nécessaire.
