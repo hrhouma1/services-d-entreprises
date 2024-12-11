@@ -32,20 +32,12 @@
 #### **Parties du TP inchangées :**
 Les consignes des parties 1 à 3 restent valables avec les ajouts suivants pour s'assurer que les étudiants comprennent et mettent en œuvre une solution réseau cohérente :
 
-- **Validation obligatoire** :
-  Avant d’avancer à la partie 2, votre enseignant doit valider votre topologie réseau mise à jour.
+**Validation non requise** : 
+Fournissez des captures d’écran détaillées de votre topologie réseau accompagnées de commentaires explicatifs pour chaque image. Ces éléments sont obligatoires avant de passer à la partie 2, mais une validation préalable de l’enseignant n’est pas nécessaire.
 
-- **Flexibilité des choix techniques** :
-  Vous êtes encouragés à expérimenter avec des outils supplémentaires (ex. : outils de monitoring réseau, gestion des logs avec Windows Event Viewer, etc.), mais cela reste facultatif.
 
----
 
-### **Ressources utiles pour les étudiants :**
-- **pfSense** :
-  - Documentation officielle : [https://docs.netgate.com](https://docs.netgate.com)
-  - Installation et configuration : Tutoriels vidéo disponibles sur YouTube.
-- **Commandes PowerShell** :
-  - [Documentation Microsoft PowerShell](https://docs.microsoft.com/fr-fr/powershell/)
-- **Group Policy (GPO)** :
-  - [GPO Guide Microsoft](https://docs.microsoft.com/fr-fr/windows-server/)
+### **Ressources utiles :**
+- vos notes de cours
+
 
