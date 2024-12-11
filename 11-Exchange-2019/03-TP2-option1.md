@@ -1,6 +1,6 @@
 
-### **Mise à jour : Travail pratique 2 - Instructions supplémentaires**
-
+### **Instructions : Travail pratique 2 - Instructions supplémentaires**
+##### ==> https://drive.google.com/drive/folders/1AhBAmZCubXH8uKP5qnMEx9ko7cQ8VpxC?usp=sharing
 #### **Topologie réseau et flexibilité**
 1. **Adresse IP et réseau** : Vous devez utiliser un réseau NAT (172.16.1.0/24 comme indiqué) pour connecter le serveur SRV05 et le poste client PC5. 
    - Adresse IP pour SRV05 : `172.16.1.10/24`
