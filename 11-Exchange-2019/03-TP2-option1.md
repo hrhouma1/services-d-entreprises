@@ -49,6 +49,3 @@ Les consignes des parties 1 à 3 restent valables avec les ajouts suivants pour 
 - **Group Policy (GPO)** :
   - [GPO Guide Microsoft](https://docs.microsoft.com/fr-fr/windows-server/)
 
----
-
-Avec ces instructions supplémentaires, les étudiants auront une flexibilité tout en s’assurant d’une compréhension approfondie des concepts réseau et Active Directory.
