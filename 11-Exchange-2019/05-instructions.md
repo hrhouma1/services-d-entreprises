@@ -9,8 +9,9 @@ Bonjour à toutes et à tous,
 - **Choix 2 :** Déploiement d’Exchange Server 2019 dans le Cloud, avec des analyses détaillées et des tests sur plusieurs plateformes.
 
 **Action requise :**
-👉 Merci de remplir le formulaire via ce lien pour indiquer votre choix : https://docs.google.com/document/d/1CKnFEM1e11hq7oIq025aZZ6IvR5rpWRmNBVx-sYbKcc/edit?usp=sharing
-🕒 **Date limite pour répondre :11 décembre 2024 à minuit.**
+👉 Merci de remplir le formulaire via ce lien pour indiquer votre choix : https://docs.google.com/document/d/1CKnFEM1e11hq7oIq025aZZ6IvR5rpWRmNBVx-sYbKcc/edit?usp=sharing.
+
+- 🕒 **Date limite pour répondre :11 décembre 2024 à minuit.**
 
 Il est essentiel que vous fassiez votre choix dans les délais pour permettre une organisation optimale. 
 Si vous avez des questions ou besoin d’éclaircissements sur les deux choix, n’hésitez pas à me contacter.
